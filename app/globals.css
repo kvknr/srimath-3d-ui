@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+:root {
+  --background: #050608;
+  --foreground: #f4f7fb;
+  --muted: #b9c1cc;
+  --panel: rgba(10, 12, 16, 0.62);
+  --panel-border: rgba(255, 255, 255, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: auto;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top, rgba(33, 43, 60, 0.45), transparent 35%),
+    radial-gradient(
+      circle at 80% 10%,
+      rgba(72, 101, 152, 0.22),
+      transparent 28%
+    ),
+    linear-gradient(180deg, #06070a 0%, #040507 45%, #050608 100%);
+  color: var(--foreground);
+  font-family: var(--font-manrope), system-ui, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: rgba(123, 167, 255, 0.3);
+  color: white;
+}
+
+.glass-panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: blur(24px);
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.35);
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.noise-overlay {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(
+    180deg,
+    transparent,
+    black 15%,
+    black 85%,
+    transparent
+  );
+  opacity: 0.18;
+}
+
+.hero-gradient {
+  background:
+    radial-gradient(
+      circle at 50% 38%,
+      rgba(105, 149, 255, 0.18),
+      transparent 18%
+    ),
+    radial-gradient(
+      circle at 20% 80%,
+      rgba(255, 255, 255, 0.05),
+      transparent 18%
+    ),
+    radial-gradient(
+      circle at 80% 60%,
+      rgba(92, 131, 255, 0.12),
+      transparent 20%
+    );
+}
+
+.section-glow {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 30px 80px rgba(3, 7, 15, 0.45);
+}
