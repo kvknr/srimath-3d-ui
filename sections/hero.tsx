@@ -42,7 +42,7 @@ export function HeroSection() {
   const { scrollTo } = useSmoothScroll();
 
   return (
-    <section id="home" className="relative min-h-[500vh]">
+    <section id="home" className="relative min-h-[280vh]">
       <div className="sticky top-0 h-screen w-screen overflow-hidden">
         <div className="absolute inset-0">
           <BuildingScene />
@@ -68,44 +68,44 @@ export function HeroSection() {
             className="left-[20%] top-[70%] h-1.5 w-1.5"
           />
         </div>
+      </div>
 
-        <div className="absolute inset-x-0 bottom-0 z-10 px-4 pb-8 pt-24 sm:px-6 md:pb-12 lg:px-10">
-          <div className="mx-auto flex max-w-7xl flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl">
-              <p className="mb-5 text-xs font-semibold uppercase tracking-[0.4em] text-slate-300/80">
-                Luxury Construction
-              </p>
-              <h1 className="max-w-4xl text-balance text-5xl font-semibold tracking-[-0.05em] text-white sm:text-6xl md:text-7xl xl:text-[6.5rem]">
-                <SplitTitle text="Building Tomorrow's Landmarks" />
-              </h1>
-              <p className="mt-6 max-w-2xl text-sm leading-7 text-slate-300/90 md:text-lg">
-                Srimath designs and delivers premium residences and landmark
-                environments with cinematic precision, material honesty, and an
-                obsession with detail from first sketch to final handover.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-4">
-                <PremiumButton href="#portfolio" accent>
-                  Explore Projects
-                </PremiumButton>
-                <PremiumButton href="#contact">Contact Us</PremiumButton>
-              </div>
+      <div className="relative z-10 px-4 pb-16 pt-20 sm:px-6 sm:pt-24 lg:px-10 lg:pt-28">
+        <div className="mx-auto flex min-h-[calc(100vh-7rem)] max-w-7xl flex-col justify-end gap-8 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <p className="mb-5 text-xs font-semibold uppercase tracking-[0.4em] text-slate-300/80">
+              Luxury Construction
+            </p>
+            <h1 className="max-w-4xl text-balance text-5xl font-semibold tracking-tighter text-white sm:text-6xl md:text-7xl xl:text-[6.5rem]">
+              <SplitTitle text="Building Tomorrow's Landmarks" />
+            </h1>
+            <p className="mt-6 max-w-2xl text-sm leading-7 text-slate-300/90 md:text-lg">
+              Srimath designs and delivers premium residences and landmark
+              environments with cinematic precision, material honesty, and an
+              obsession with detail from first sketch to final handover.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-4">
+              <PremiumButton href="#portfolio" accent>
+                Explore Projects
+              </PremiumButton>
+              <PremiumButton href="#contact">Contact Us</PremiumButton>
             </div>
-
-            <button
-              onClick={() => scrollTo("#about")}
-              className="group flex items-center gap-4 self-start rounded-full border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-slate-200 backdrop-blur-xl transition-colors hover:bg-white/10"
-            >
-              <span className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/10">
-                <ArrowDown className="h-4 w-4 transition-transform duration-300 group-hover:translate-y-1" />
-              </span>
-              <span className="pr-3">
-                <span className="block text-[10px] uppercase tracking-[0.35em] text-slate-400">
-                  Scroll Story
-                </span>
-                <span className="block text-white">Discover the journey</span>
-              </span>
-            </button>
           </div>
+
+          <button
+            onClick={() => scrollTo("#about")}
+            className="group flex items-center gap-4 self-start rounded-full border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-slate-200 backdrop-blur-xl transition-colors hover:bg-white/10"
+          >
+            <span className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/10">
+              <ArrowDown className="h-4 w-4 transition-transform duration-300 group-hover:translate-y-1" />
+            </span>
+            <span className="pr-3">
+              <span className="block text-[10px] uppercase tracking-[0.35em] text-slate-400">
+                Scroll Story
+              </span>
+              <span className="block text-white">Discover the journey</span>
+            </span>
+          </button>
         </div>
       </div>
     </section>

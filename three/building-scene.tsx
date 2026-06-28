@@ -1,242 +1,169 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef } from "react";
-import React from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import {
-  AdaptiveDpr,
-  AdaptiveEvents,
-  Center,
-  Environment,
-  ContactShadows,
-  Preload,
-  useGLTF,
-} from "@react-three/drei";
-import { Bloom, EffectComposer } from "@react-three/postprocessing";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import * as THREE from "three";
-import { LoadingScreen } from "@/three/loading-screen";
 
 gsap.registerPlugin(ScrollTrigger);
 
-type Targets = {
-  cameraX: number;
-  cameraY: number;
-  cameraZ: number;
-  rotationY: number;
-  rotationX: number;
-  lightIntensity: number;
-  fillIntensity: number;
-  bloomIntensity: number;
+type FrameSequenceProps = {
+  frameCount?: number;
+  framePath?: string;
+  loadingLabel?: string;
+  alt?: string;
 };
 
-function BuildingModel({
-  targets,
-}: {
-  targets: React.MutableRefObject<Targets>;
-}) {
-  const group = useRef<THREE.Group>(null);
-  const { scene } = useGLTF("/modern_house.glb");
+const DEFAULT_FRAME_COUNT = 240;
+const DEFAULT_FRAME_PATH = "/srimath-3d-frames";
 
-  useMemo(() => {
-    scene.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) {
-        const mesh = child as THREE.Mesh;
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-      }
-    });
-  }, [scene]);
+function frameSrc(framePath: string, index: number) {
+  return `${framePath}/ezgif-frame-${String(index).padStart(3, "0")}.jpg`;
+}
 
-  useFrame((state, delta) => {
-    if (!group.current) {
-      return;
-    }
-
-    const t = targets.current;
-    state.camera.position.x = THREE.MathUtils.damp(
-      state.camera.position.x,
-      t.cameraX,
-      2.8,
-      delta,
-    );
-    state.camera.position.y = THREE.MathUtils.damp(
-      state.camera.position.y,
-      t.cameraY,
-      2.8,
-      delta,
-    );
-    state.camera.position.z = THREE.MathUtils.damp(
-      state.camera.position.z,
-      t.cameraZ,
-      2.8,
-      delta,
-    );
-    state.camera.lookAt(0, 0.85, 0);
-    group.current.rotation.y = THREE.MathUtils.damp(
-      group.current.rotation.y,
-      t.rotationY,
-      2.2,
-      delta,
-    );
-    group.current.rotation.x = THREE.MathUtils.damp(
-      group.current.rotation.x,
-      t.rotationX,
-      2.2,
-      delta,
-    );
-  });
-
+function SceneFallback() {
   return (
-    <group ref={group} scale={0} position={[0, -0.95, 0]}>
-      <Center top>
-        {React.createElement("primitive" as any, {
-          object: scene,
-        })}
-      </Center>
-    </group>
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(20,26,36,0.35),rgba(5,6,8,0.96))]" />
   );
 }
 
-useGLTF.preload("/modern_house.glb");
-
-function sceneElement(type: string, props: Record<string, unknown>) {
-  return React.createElement(type as any, props);
+function LoadingOverlay({
+  progress,
+  label,
+}: {
+  progress: number;
+  label: string;
+}) {
+  return (
+    <div className="absolute inset-0 z-20 flex items-center justify-center bg-[radial-gradient(circle_at_center,rgba(5,8,13,0.35),rgba(5,6,8,0.9))] px-4">
+      <div className="glass-panel flex min-w-60 flex-col items-start gap-4 rounded-3xl px-5 py-4 text-white shadow-2xl">
+        <div>
+          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">
+            {label}
+          </p>
+          <h3 className="mt-1 text-lg font-semibold">Preparing the sequence</h3>
+        </div>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+          <div
+            className="h-full rounded-full bg-linear-to-r from-sky-300 to-white transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <p className="text-xs text-slate-300">{Math.round(progress)}% loaded</p>
+      </div>
+    </div>
+  );
 }
 
-export function BuildingScene() {
-  const targets = useRef<Targets>({
-    cameraX: 0,
-    cameraY: 1.9,
-    cameraZ: 14,
-    rotationY: 0,
-    rotationX: -0.04,
-    lightIntensity: 2.2,
-    fillIntensity: 0.85,
-    bloomIntensity: 0.35,
-  });
-
+export function BuildingScene({
+  frameCount = DEFAULT_FRAME_COUNT,
+  framePath = DEFAULT_FRAME_PATH,
+  loadingLabel = "Loading frames",
+  alt = "Srimath architectural sequence",
+}: FrameSequenceProps) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+  const frameState = useRef({ frame: 1 });
+  const currentFrame = useRef(1);
+  const [loadedFrames, setLoadedFrames] = useState(0);
+
+  const initialFrame = useMemo(() => frameSrc(framePath, 1), [framePath]);
 
   useEffect(() => {
-    const context = gsap.context(() => {
-      const timeline = gsap.timeline({
-        scrollTrigger: {
-          trigger: rootRef.current,
-          start: "top top",
-          end: "bottom bottom",
-          scrub: 1,
-          pin: true,
-          anticipatePin: 1,
-        },
+    let cancelled = false;
+
+    const preloadedFrames: HTMLImageElement[] = [];
+
+    for (let index = 1; index <= frameCount; index += 1) {
+      const image = new Image();
+      image.src = frameSrc(framePath, index);
+      image.onload = () => {
+        if (!cancelled) {
+          setLoadedFrames((current) => Math.min(frameCount, current + 1));
+        }
+      };
+      image.onerror = () => {
+        if (!cancelled) {
+          setLoadedFrames((current) => Math.min(frameCount, current + 1));
+        }
+      };
+      preloadedFrames.push(image);
+    }
+
+    return () => {
+      cancelled = true;
+      preloadedFrames.forEach((image) => {
+        image.onload = null;
+        image.onerror = null;
       });
-
-      timeline
-        .to(
-          targets.current,
-          {
-            cameraZ: 11.8,
-            cameraY: 1.72,
-            bloomIntensity: 0.42,
-            ease: "none",
-            duration: 1,
-          },
-          0,
-        )
-        .to(
-          targets.current,
-          {
-            rotationY: Math.PI * 0.85,
-            cameraX: 0.78,
-            cameraY: 1.55,
-            lightIntensity: 2.55,
-            fillIntensity: 0.95,
-            ease: "none",
-            duration: 1,
-          },
-          0.33,
-        )
-        .to(
-          targets.current,
-          {
-            rotationY: Math.PI * 2,
-            rotationX: 0.03,
-            cameraX: -0.62,
-            cameraZ: 10.9,
-            bloomIntensity: 0.48,
-            ease: "none",
-            duration: 1,
-          },
-          0.66,
-        );
-    }, rootRef);
-
-    return () => context.revert();
+    };
   }, []);
 
+  useEffect(() => {
+    const triggerElement =
+      rootRef.current?.closest("section") ?? rootRef.current;
+    const image = imageRef.current;
+
+    if (!triggerElement || !image) {
+      return;
+    }
+
+    const updateFrame = () => {
+      const nextFrame = Math.min(
+        frameCount,
+        Math.max(1, Math.round(frameState.current.frame)),
+      );
+
+      if (nextFrame === currentFrame.current) {
+        return;
+      }
+
+      currentFrame.current = nextFrame;
+      image.src = frameSrc(framePath, nextFrame);
+    };
+
+    image.src = initialFrame;
+
+    const tween = gsap.to(frameState.current, {
+      frame: frameCount,
+      ease: "none",
+      scrollTrigger: {
+        trigger: triggerElement,
+        start: "top top",
+        end: "bottom bottom",
+        scrub: 1,
+      },
+      onUpdate: updateFrame,
+    });
+
+    updateFrame();
+
+    return () => {
+      tween.scrollTrigger?.kill();
+      tween.kill();
+    };
+  }, [initialFrame]);
+
   return (
-    <div ref={rootRef} className="absolute inset-0 h-full w-full">
-      <Canvas
-        className="absolute inset-0 block h-full w-full"
-        shadows
-        camera={{ position: [0, 1.9, 14], fov: 40, near: 0.1, far: 100 }}
-        dpr={[1, 1.75]}
-        gl={{
-          antialias: true,
-          alpha: true,
-          powerPreference: "high-performance",
-        }}
-        style={{ width: "100vw", height: "100vh", display: "block" }}
-        onCreated={({ scene }) => {
-          scene.background = new THREE.Color("#050608");
-          scene.fog = new THREE.Fog("#050608", 10, 26);
-        }}
-      >
-        <AdaptiveDpr pixelated={false} />
-        <AdaptiveEvents />
-        <Suspense fallback={<LoadingScreen />}>
-          {sceneElement("ambientLight", { intensity: 0.42, color: "#f5f7ff" })}
-          {sceneElement("hemisphereLight", {
-            intensity: targets.current.fillIntensity,
-            color: "#d5e5ff",
-            groundColor: "#090b10",
-          })}
-          {sceneElement("directionalLight", {
-            castShadow: true,
-            intensity: targets.current.lightIntensity,
-            position: [6, 10, 6],
-            color: "#f7fbff",
-            "shadow-mapSize-width": 2048,
-            "shadow-mapSize-height": 2048,
-          })}
-          {sceneElement("spotLight", {
-            position: [-8, 8, 8],
-            intensity: 0.75,
-            angle: 0.28,
-            penumbra: 0.8,
-            color: "#7fb2ff",
-          })}
-          <Environment preset="city" />
-          <BuildingModel targets={targets} />
-          <ContactShadows
-            opacity={0.55}
-            scale={18}
-            blur={2.6}
-            far={6}
-            resolution={1024}
-            color="#000000"
-          />
-          <EffectComposer>
-            <Bloom
-              intensity={targets.current.bloomIntensity}
-              luminanceThreshold={0.16}
-              luminanceSmoothing={0.8}
-            />
-          </EffectComposer>
-          <Preload all />
-        </Suspense>
-      </Canvas>
+    <div
+      ref={rootRef}
+      className="absolute inset-0 h-full w-full overflow-hidden"
+    >
+      <SceneFallback />
+      <img
+        ref={imageRef}
+        src={initialFrame}
+        alt={alt}
+        className="absolute inset-0 h-full w-full object-cover"
+        onLoad={() => setLoadedFrames((current) => Math.max(1, current))}
+        draggable={false}
+      />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(5,8,13,0.1),rgba(5,6,8,0.72)_68%,rgba(5,6,8,0.98))]" />
+      {loadedFrames < frameCount ? (
+        <LoadingOverlay
+          progress={(loadedFrames / frameCount) * 100}
+          label={loadingLabel}
+        />
+      ) : null}
     </div>
   );
 }
